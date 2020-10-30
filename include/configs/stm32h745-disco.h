@@ -12,6 +12,10 @@
 #define CONFIG_SYS_FLASH_BASE		0x08000000
 #define CONFIG_SYS_INIT_SP_ADDR		0x24040000
 
+//add debug information
+#define CONFIG_DEBUG_UART_STM32
+#define CONFIG_DEBUG_UART_BASE 		0x40004800
+#define CONFIG_DEBUG_UART_CLOCK		64000000
 /*
  * Configuration of the external SDRAM memory
  */

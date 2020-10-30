@@ -23,7 +23,7 @@
 	};
 
 	aliases {
-		serial0 = &usart2;
+		serial0 = &usart3;
 	};
 
 	v3v3: regulator-v3v3 {

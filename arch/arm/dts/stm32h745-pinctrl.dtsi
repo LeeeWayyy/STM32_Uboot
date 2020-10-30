@@ -47,7 +47,7 @@
 		pinctrl: pin-controller {
 			#address-cells = <1>;
 			#size-cells = <1>;
-			compatible = "st,stm32h743-pinctrl";
+			compatible = "st,stm32h745-pinctrl";
 			ranges = <0 0x58020000 0x3000>;
 			interrupt-parent = <&exti>;
 			st,syscfg = <&syscfg 0x8>;
@@ -278,6 +278,19 @@
 				};
 				pins2 {
 					pinmux = <STM32_PINMUX('D', 6, AF7)>; /* USART2_RX */
+					bias-disable;
+				};
+			};
+
+			usart3_pins: usart3@0 {
+				pins1 {
+					pinmux = <STM32_PINMUX('B', 10, AF7)>; /* USART3_TX */
+					bias-disable;
+					drive-push-pull;
+					slew-rate = <0>;
+				};
+				pins2 {
+					pinmux = <STM32_PINMUX('B', 11, AF7)>; /* USART2_RX */
 					bias-disable;
 				};
 			};
