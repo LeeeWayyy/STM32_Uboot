@@ -1,0 +1,7 @@
+STM32H745 DISCOVERY BOARD
+M:	Li Wei
+S:	Maintained
+F:	board/st/stm32h745-disco
+F:	include/configs/stm32h745-disco.h
+F:	configs/stm32h745-disco_defconfig
+F:	arch/arm/dts/stm32h7*
