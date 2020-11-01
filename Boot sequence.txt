@@ -1,0 +1,65 @@
+Vector.S excute first
+```
+.globl _start
+```
+this defines the symbol _start as global.
+
+```
+.section ".vectors", "ax"
+```
+these codes are placed at .vectors section in text section.
+
+```
+_start:
+#ifdef CONFIG_SYS_DV_NOR_BOOT_CFG
+	.word	CONFIG_SYS_DV_NOR_BOOT_CFG
+#endif
+	ARM_VECTORS
+#endif /* !defined(CONFIG_ENABLE_ARM_SOC_BOOT0_HOOK) */
+
+/*
+ *************************************************************************
+ *
+ * Indirect vectors table
+ *
+ * Symbols referenced here must be defined somewhere else
+ *
+ *************************************************************************
+ */
+
+	.globl  _reset
+	.globl	_undefined_instruction
+	.globl	_software_interrupt
+	.globl	_prefetch_abort
+	.globl	_data_abort
+	.globl	_not_used
+	.globl	_irq
+	.globl	_fiq
+```
+
+here defines the _start symbol, ARM_VECTORS is a macro, which defines as:
+```
+        .macro ARM_VECTORS
+#ifdef CONFIG_ARCH_K3
+	ldr     pc, _reset
+#else
+	b	reset
+#endif
+	ldr	pc, _undefined_instruction
+	ldr	pc, _software_interrupt
+	ldr	pc, _prefetch_abort
+	ldr	pc, _data_abort
+	ldr	pc, _not_used
+	ldr	pc, _irq
+	ldr	pc, _fiq
+	.endm
+```
+
+This macro defines the vector table. When _start us ben excute, it jump to reset function, where
+it is defined in arch/armv7m/start.S file:
+```
+.globl	reset
+.type reset, %function
+reset:
+	W(b)	_main
+```

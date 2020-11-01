@@ -263,6 +263,11 @@ ifeq ($(HOSTARCH),$(ARCH))
 CROSS_COMPILE ?=
 endif
 
+# add specific ARCH amd CROSS_COMPILE define for our case
+CROSS_COMPILE ?= arm-none-eabi-
+ARCH ?= arm
+
+
 KCONFIG_CONFIG	?= .config
 export KCONFIG_CONFIG
 
@@ -435,6 +440,15 @@ export HOSTCXX HOSTCXXFLAGS CHECK CHECKFLAGS DTC DTC_FLAGS
 
 export KBUILD_CPPFLAGS NOSTDINC_FLAGS UBOOTINCLUDE OBJCOPYFLAGS LDFLAGS
 export KBUILD_CFLAGS KBUILD_AFLAGS
+
+#test the board information before build
+board_info_test:
+	@echo 'ARCH = ' $(ARCH)
+	@echo 'CPU = ' 	$(CPU)
+	@echo 'BOARD = '$(BOARD)
+	@echo 'CPUDIR = ' $(CPUDIR)
+	@echo 'BOARDDIR = ' $(BOARDDIR)
+
 
 # When compiling out-of-tree modules, put MODVERDIR in the module
 # tree rather than in the kernel tree. The kernel tree might
