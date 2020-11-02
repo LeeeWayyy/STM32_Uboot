@@ -1,0 +1,112 @@
+dtb can be compiled by two different form:
+1. dtb is detached with uboot's bin file. It is enabled by defining CONFIG_OF_SEPERATE.
+In this case the uboot compile and the dtb compile is seperate as well. u-boot.bin is generated
+first and dtb file later. The final dtb bin files will be added to uboot.bin. Can use _end flag to 
+get the address of dtb. 
+which can be done by cmd : cat u-boot-nodtb.bin u-boot.dtb >image.bin
+
+2. dtb is embedded in the bin file. It is enabled by defining CONFIG_OF_EMBED.
+Can use _dtb_dt_begin to get the flag;
+
+3. ALso can use fdtcontroladdr environment variable to assign dtb address. This can load dtb to certain
+address to realize dynamic dtb address during debug.
+
+
+Add dtb:
+1. in arch/dts/Makefile add corresponding dtb files
+```
+dtb-$(CONFIG_STM32H7) += stm32h743i-disco.dtb \
+	stm32h743i-eval.dtb \
+	stm32h745i-disco.dtb
+```
+
+2. Create corresponding dts file in arch/dts/ folder
+```
+arch/arm/dts/stm32h745.dtsi
+arch/arm/dts/stm32h745i-disco.dts
+arch/arm/dts/stm32h745i-disco-u-boot.dtsi
+```
+
+3. open configs/stm32h745h_disco_defconfig and define CONFIG_OF_CONTROL and CONFIG_OF_SEPERATE
+
+4. since it may compiles multiple dtb files, need define CONFIG_DEFAULT_DEVICE_TREE "stm32h745i-disco"
+
+
+
+So how uboot get dtb information?
+During uboot init, need to do two things to dtb:
+1. acquire dtb address and verify whethere dtb is legal or not.
+2. since uboot is configured seperately, during relacation, uboot won't relocate the dtb. So, we need to 
+reserve space and relocate dtb.
+3. after relocation, we need to get the new dtb address
+
+
+This process is realized in common/board_f.c, during init_sequence .
+```
+static init_fnc_t init_sequence_f[] = {
+...
+#ifdef CONFIG_OF_CONTROL
+    fdtdec_setup, // 获取dtb的地址，并且验证dtb的合法性
+#endif
+...
+    reserve_fdt, // 为dtb分配新的内存地址空间
+...
+    reloc_fdt, // relocate dtb
+...
+}
+```
+
+
+Below check the functions defined in lib/fdtdec.c
+
+First check the validity of the dtb files
+```
+int fdtdec_setup(void)
+{
+    ...
+	gd->fdt_blob = board_fdt_blob_setup(); //gd-fd_blob = (ulong *)&_end;
+    ...
+	return fdtdec_prepare_fdt();    //check whether device tree are valid
+}
+```
+
+The reserve memory for the dtb file.
+```
+static int reserve_fdt(void)
+{
+#ifndef CONFIG_OF_EMBED
+	/*
+	 * If the device tree is sitting immediately above our image then we
+	 * must relocate it. If it is embedded in the data section, then it
+	 * will be relocated with other data.
+	 */
+	if (gd->fdt_blob) {
+		gd->fdt_size = ALIGN(fdt_totalsize(gd->fdt_blob) + 0x1000, 32);
+
+		gd->start_addr_sp -= gd->fdt_size;
+		gd->new_fdt = map_sysmem(gd->start_addr_sp, gd->fdt_size);
+		debug("Reserving %lu Bytes for FDT at: %08lx\n",
+		      gd->fdt_size, gd->start_addr_sp);
+	}
+#endif
+
+	return 0;
+}
+```
+
+Relocate the dtb
+```
+static int reloc_fdt(void)
+{
+#ifndef CONFIG_OF_EMBED
+	if (gd->flags & GD_FLG_SKIP_RELOC)
+		return 0;
+	if (gd->new_fdt) {
+		memcpy(gd->new_fdt, gd->fdt_blob, gd->fdt_size);
+		gd->fdt_blob = gd->new_fdt;
+	}
+#endif
+
+	return 0;
+}
+```
