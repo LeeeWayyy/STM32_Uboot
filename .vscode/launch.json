@@ -10,7 +10,16 @@
             "executable": "./u-boot",
             "request": "launch",
             "type": "cortex-debug",
-            "servertype": "jlink"
+            "servertype": "openocd",
+            // "device": "stm32h745",
+            "configFiles": [
+                "interface/stlink.cfg",
+                // "board/stm32_st_board.vm"
+                "target/stm32h7x.cfg",
+                // "board/stm32f7discovery.cfg"
+            ],
+            // "serverpath": "/usr/bin/stlink-server",
+            // "svdFile": "notations/svd/STM32H7x5_CM7.svd",
         }
     ]
 }
