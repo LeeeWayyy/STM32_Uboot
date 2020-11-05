@@ -93,3 +93,6 @@ sudo make install
 # download https://my.st.com/content/my_st_com/en/products/development-tools/software-development-tools/stm32-software-development-tools/stm32-programmers/stsw-link007.license=1604430053300.product=STSW-LINK007.version=2.37.26.html
 # refence file:///tmp/mozilla_leeewayyy0/dm00402226-stlink-server-stmicroelectronics.pdf
 
+
+
+cat u-boot-nodtb.bin u-boot.dtb >image.bin

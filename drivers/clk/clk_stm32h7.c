@@ -365,6 +365,9 @@ int configure_clocks(struct udevice *dev)
 	writel(0x0, &regs->d2ccip2r);
 
 	/* Set voltage scaling at scale 1 (1,15 - 1,26 Volts) */
+	/* 	clrsetbits_le32(pwr_base + PWR_D3CR, PWR_D3CR_VOS_MASK,
+			VOS_SCALE_1 << PWR_D3CR_VOS_SHIFT);*/
+	clrbits_le32(pwr_base + PWR_CR3, PWR_CR3_SCUEN);
 	clrsetbits_le32(pwr_base + PWR_D3CR, PWR_D3CR_VOS_MASK,
 			VOS_SCALE_1 << PWR_D3CR_VOS_SHIFT);
 	/* Lock supply configuration update */
