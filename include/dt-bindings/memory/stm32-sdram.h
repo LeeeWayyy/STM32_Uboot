@@ -40,7 +40,9 @@
 #define TWR_1		(1 - 1)
 #define TWR_2		(2 - 1)
 #define TRP_2		(2 - 1)
+#define TRP_3		(3 - 1)
 #define TRCD_1		(1 - 1)
 #define TRCD_2		(2 - 1)
+#define TRCD_3		(3 - 1)
 
 #endif
