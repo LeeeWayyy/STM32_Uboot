@@ -36,7 +36,7 @@
 			status = "okay";
 
 			/*
-			 * Memory configuration from sdram datasheet MT48LC4M32B2
+			 * Memory configuration from sdram datasheet MT48LC4M32B2B5-6A
 			 * firsct bank is bank@0
 			 * second bank is bank@1
 			 */
@@ -180,7 +180,6 @@
 				 <STM32_PINMUX('H', 5, AF12)>,
 				 <STM32_PINMUX('H', 6, AF12)>,
 				 <STM32_PINMUX('H', 7, AF12)>;
-
 			slew-rate = <3>;
 		};
 	};
