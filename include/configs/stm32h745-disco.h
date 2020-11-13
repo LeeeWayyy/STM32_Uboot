@@ -8,6 +8,8 @@
 #define __CONFIG_H
 
 #include <config.h>
+#define DEBUG
+#define TARGET_STM32H745_DISCO
 
 #define CONFIG_SYS_FLASH_BASE		0x08000000
 #define CONFIG_SYS_INIT_SP_ADDR		0x24040000

@@ -37,6 +37,7 @@
 #define TRAS_1		(1 - 1)
 #define TRAS_4		(4 - 1)
 #define TRC_6		(6 - 1)
+#define TRC_7		(7 - 1)
 #define TWR_1		(1 - 1)
 #define TWR_2		(2 - 1)
 #define TRP_2		(2 - 1)

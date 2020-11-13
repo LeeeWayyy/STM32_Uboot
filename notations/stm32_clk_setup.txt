@@ -1,0 +1,35 @@
+based on HAL SystemClock_Config
+1. HAL_PWREx_ConfigSupply(PWR_LDO_SUPPLY)
+    set LDO regulator supplies the vcore pwoer domains, the smps regulator is bypassed
+    a. if(SCUEN) bit is set check pwr->CR3 == PWR_LDO_SUPPLY;
+    b. set pwr->CR3 == PWR_LDO_SUPPLY
+    c. wait till pwr->CR1->ACTVOSRDY flag is set
+2. Set regulator voltage scale to be scale1
+3. wait till VOSRDY flag is set
+4. HAL_RCC_PLL_PLLSOURCE_CONFIG(RCC_PLLSOURCE_HSE)
+    config the PLL clock source to HSE
+    RCC->PLLCKSELR = HSE
+5. HAL_RCC_OscConfig()
+    initialize the RCC Oscillators
+    HSE configuration
+    a. get sysclksrc = RCC->cfgr & 
+    b. get pllsckser = RCCKSEKR
+    c. RCC->CR = HSE_ON and wait till HSERDY is ready
+        or RCC->CR = HSE_OFF and wait till HSERDY is disabled
+    HEI configuration
+    ......
+    PLL configuration
+        a. disable the main PLL, and wait till PLL is disabled;
+            RCC->CR
+        b. Configure the main PLL clock source, multiplication and division factors
+            RCC->PLLCKSELR
+        c. disable PLLFRACN, and config
+            RCC->PLLCFGR
+        d. Select PLL1 input reference frequency range: VCI
+            RCC->PLLCFGR
+        e. Select PLL1 output frequency range : VCO
+            RCC->PLLCFGR
+        f. Enable PLL System Clock output, PLL1Q Clock output, PLL1R  Clock output
+        g. Enable PLL1FRACN
+        h. Enable the main PLL and wait till PLL is ready
+            RCC->CR

@@ -10,6 +10,11 @@
 #include <ram.h>
 #include <asm/io.h>
 
+#ifdef TARGET_STM32H745_DISCO
+#include "stm32h7_sdram.h"
+#endif
+
+
 #define MEM_MODE_MASK	GENMASK(2, 0)
 #define SWP_FMC_OFFSET 10
 #define SWP_FMC_MASK	GENMASK(SWP_FMC_OFFSET+1, SWP_FMC_OFFSET)
@@ -73,6 +78,16 @@ struct stm32_fmc_regs {
 #define FMC_SDCR_NR_SHIFT	2	/* Number of row address bits shift */
 #define FMC_SDCR_NC_SHIFT	0	/* Number of col address bits shift */
 
+#define FMC_SDCR_RPIPE_MASK		GENMASK(14, 13)	/* RPIPE bit MASK */
+#define FMC_SDCR_RBURST_MASK	(1 << 12)	/* RBURST bit MASK */
+#define FMC_SDCR_SDCLK_MASK		GENMASK(11, 10)	/* SDRAM clock divisor MASK */
+#define FMC_SDCR_WP_MASK		(1 << 9)			/* Write protection MASK */
+#define FMC_SDCR_CAS_MASK		GENMASK(8, 7)	/* CAS latency MASK */
+#define FMC_SDCR_NB_MASK		(1 << 6)			/* Number of banks MASK */
+#define FMC_SDCR_MWID_MASK		GENMASK(5, 4)	/* Memory width MASK */
+#define FMC_SDCR_NR_MASK		GENMASK(3, 2)	/* Number of row address bits MASK */
+#define FMC_SDCR_NC_MASK		GENMASK(1, 0)	/* Number of col address bits shift */
+#define FMC_SDCR_CLEAR_MASK		GENMASK(14, 0)
 /* Timings register SDTR */
 #define FMC_SDTR_TMRD_SHIFT	0	/* Load mode register to active */
 #define FMC_SDTR_TXSR_SHIFT	4	/* Exit self-refresh time */
@@ -81,6 +96,10 @@ struct stm32_fmc_regs {
 #define FMC_SDTR_TWR_SHIFT	16	/* Recovery delay */
 #define FMC_SDTR_TRP_SHIFT	20	/* Row precharge delay */
 #define FMC_SDTR_TRCD_SHIFT	24	/* Row-to-column delay */
+
+#define FMC_SDTR_TRC_MASK		GENMASK(15, 12)	/* Row cycle delay mask */
+#define FMC_SDTR_TRP_MASK		GENMASK(23, 20)	/* Row precharge delay */
+#define FMC_SDTR_CLEAR_MASK		GENMASK(27, 0)
 
 #define FMC_SDCMR_NRFS_SHIFT	5
 
@@ -154,6 +173,18 @@ struct stm32_sdram_params {
 #define SDRAM_MODE_CAS_SHIFT	4
 #define SDRAM_MODE_BL		0
 
+static void stm32_sdram_sendData(uint32_t mode, 
+								uint32_t target, 
+								uint32_t auto_refresh_no, 
+								uint32_t mode_register,
+								struct stm32_fmc_regs *regs) {
+	uint32_t command = 	mode 	| 	target 	|
+					    (auto_refresh_no - 1) << FMC_SDCMR_NRFS_SHIFT |
+                         mode_register << FMC_SDCMR_MODE_REGISTER_SHIFT;
+	writel(command, &regs->sdcmr);
+}
+
+
 int stm32_sdram_init(struct udevice *dev)
 {
 	struct stm32_sdram_params *params = dev_get_platdata(dev);
@@ -165,9 +196,7 @@ int stm32_sdram_init(struct udevice *dev)
 	u32 ref_count;
 	u8 i;
 
-	/* disable the FMC controller */
-	if (params->family == STM32H7_FMC)
-		clrbits_le32(&regs->bcr1, FMC_BCR1_FMCEN);
+	setbits_le32(&regs->bcr1, FMC_BCR1_FMCEN);
 
 	for (i = 0; i < params->no_sdram_banks; i++) {
 		control = params->bank_params[i].sdram_control;
@@ -175,34 +204,17 @@ int stm32_sdram_init(struct udevice *dev)
 		target_bank = params->bank_params[i].target_bank;
 		ref_count = params->bank_params[i].sdram_ref_count;
 
-		writel(control->sdclk << FMC_SDCR_SDCLK_SHIFT
-			| control->cas_latency << FMC_SDCR_CAS_SHIFT
-			| control->no_banks << FMC_SDCR_NB_SHIFT
-			| control->memory_width << FMC_SDCR_MWID_SHIFT
-			| control->no_rows << FMC_SDCR_NR_SHIFT
-			| control->no_columns << FMC_SDCR_NC_SHIFT
-			| control->rd_pipe_delay << FMC_SDCR_RPIPE_SHIFT
-			| control->rd_burst << FMC_SDCR_RBURST_SHIFT,
-			&regs->sdcr1);
-
-		if (target_bank == SDRAM_BANK2)
-			writel(control->cas_latency << FMC_SDCR_CAS_SHIFT
+		if(target_bank == SDRAM_BANK1) {
+			writel(control->sdclk << FMC_SDCR_SDCLK_SHIFT
+				| control->cas_latency << FMC_SDCR_CAS_SHIFT
 				| control->no_banks << FMC_SDCR_NB_SHIFT
 				| control->memory_width << FMC_SDCR_MWID_SHIFT
 				| control->no_rows << FMC_SDCR_NR_SHIFT
-				| control->no_columns << FMC_SDCR_NC_SHIFT,
-				&regs->sdcr2);
+				| control->no_columns << FMC_SDCR_NC_SHIFT
+				| control->rd_pipe_delay << FMC_SDCR_RPIPE_SHIFT
+				| control->rd_burst << FMC_SDCR_RBURST_SHIFT,
+				&regs->sdcr1);
 
-		writel(timing->trcd << FMC_SDTR_TRCD_SHIFT
-			| timing->trp << FMC_SDTR_TRP_SHIFT
-			| timing->twr << FMC_SDTR_TWR_SHIFT
-			| timing->trc << FMC_SDTR_TRC_SHIFT
-			| timing->tras << FMC_SDTR_TRAS_SHIFT
-			| timing->txsr << FMC_SDTR_TXSR_SHIFT
-			| timing->tmrd << FMC_SDTR_TMRD_SHIFT,
-			&regs->sdtr1);
-
-		if (target_bank == SDRAM_BANK2)
 			writel(timing->trcd << FMC_SDTR_TRCD_SHIFT
 				| timing->trp << FMC_SDTR_TRP_SHIFT
 				| timing->twr << FMC_SDTR_TWR_SHIFT
@@ -210,13 +222,53 @@ int stm32_sdram_init(struct udevice *dev)
 				| timing->tras << FMC_SDTR_TRAS_SHIFT
 				| timing->txsr << FMC_SDTR_TXSR_SHIFT
 				| timing->tmrd << FMC_SDTR_TMRD_SHIFT,
-				&regs->sdtr2);
+				&regs->sdtr1);
 
-		if (target_bank == SDRAM_BANK1)
-			ctb = FMC_SDCMR_BANK_1;
-		else
+			ctb = FMC_SDCMR_BANK_1;		
+		}else {
+			clrsetbits_le32(&regs->sdcr1, 
+							FMC_SDCR_SDCLK_MASK 							|
+							FMC_SDCR_RBURST_MASK 							|
+							FMC_SDCR_RPIPE_MASK, 
+							control->sdclk << FMC_SDCR_SDCLK_SHIFT  		|
+							control->rd_burst << FMC_SDCR_RBURST_SHIFT		|
+							control->rd_pipe_delay << FMC_SDCR_RPIPE_SHIFT
+							);
+			
+			clrsetbits_le32(&regs->sdcr2, 
+							FMC_SDCR_CLEAR_MASK, 
+							control->no_banks << FMC_SDCR_NB_SHIFT			|
+							control->memory_width << FMC_SDCR_MWID_SHIFT	|
+							control->no_rows << FMC_SDCR_NR_SHIFT			|
+							control->no_columns << FMC_SDCR_NC_SHIFT		|
+							control->cas_latency << FMC_SDCR_CAS_SHIFT	
+							);
+
+			clrsetbits_le32(&regs->sdtr1, 
+							FMC_SDTR_TRC_MASK								|
+							FMC_SDTR_TRP_MASK, 
+							timing->trc << FMC_SDTR_TRC_SHIFT				|
+							timing->trp << FMC_SDTR_TRP_SHIFT					
+							);
+
+			clrsetbits_le32(&regs->sdtr2, 
+							FMC_SDTR_CLEAR_MASK, 
+							timing->tmrd << FMC_SDTR_TMRD_SHIFT				|
+							timing->txsr << FMC_SDTR_TXSR_SHIFT				|
+							timing->tras << FMC_SDTR_TRAS_SHIFT				|
+							timing->twr << FMC_SDTR_TWR_SHIFT				|
+							timing->trcd << FMC_SDTR_TRCD_SHIFT					
+							);
+
+			debug("sdcr1 register value is : %x\n", (uint32_t) readl(&regs->sdcr1));
+			debug("sdcr2 register value is : %x\n", (uint32_t) readl(&regs->sdcr2));
+			debug("sdtr1 register value is : %x\n", (uint32_t) readl(&regs->sdtr1));
+			debug("sdtr2 register value is : %x\n", (uint32_t) readl(&regs->sdtr2));
 			ctb = FMC_SDCMR_BANK_2;
+		}
 
+
+#ifndef TARGET_STM32H745_DISCO
 		writel(ctb | FMC_SDCMR_MODE_START_CLOCK, &regs->sdcmr);
 		udelay(200);	/* 200 us delay, page 10, "Power-Up" */
 		FMC_BUSY_WAIT(regs);
@@ -242,11 +294,63 @@ int stm32_sdram_init(struct udevice *dev)
 
 		/* Refresh timer */
 		writel(ref_count << 1, &regs->sdrtr);
+#else
+		/* Step 1: Configure a clock configuration enable command */
+		stm32_sdram_sendData(SDRAM_CLK_ENABLE_CMD,
+							ctb,
+							1,
+							0,
+							regs);
+		/* Step 2: Insert 100 us minimum delay */
+		udelay(1000);
+		// FMC_BUSY_WAIT(regs);
+
+		/* Step 3: Configure a PALL (precharge all) command */ 
+		stm32_sdram_sendData(SDRAM_PALL_CMD,
+							ctb,
+							1,
+							0,
+							regs);
+		udelay(100);
+		// FMC_BUSY_WAIT(regs);
+
+		/* Step 4: Configure a Refresh command */ 
+		stm32_sdram_sendData(SDRAM_AUTOREFRESH_MODE_CMD,
+							ctb,
+							8,
+							0,
+							regs);
+		udelay(100);
+		// FMC_BUSY_WAIT(regs);
+
+		/*step 5. Program the external memory mode register*/
+		uint32_t   tmpmrd = (uint32_t)	SDRAM_MODEREG_BURST_LENGTH_1          |\
+                    					SDRAM_MODEREG_BURST_TYPE_SEQUENTIAL   |\
+                     					SDRAM_MODEREG_CAS_LATENCY_3           |\
+                     					SDRAM_MODEREG_OPERATING_MODE_STANDARD |\
+                     					SDRAM_MODEREG_WRITEBURST_MODE_SINGLE;
+		stm32_sdram_sendData(SDRAM_LOAD_MODE_CMD,
+							ctb,
+							1,
+							tmpmrd,
+							regs);
+		udelay(100);
+		// FMC_BUSY_WAIT(regs);
+
+		/* Refresh timer */
+		writel(ref_count << 1, &regs->sdrtr);
+		debug("sdcr1 register value is : %x\n", (uint32_t) readl(&regs->sdrtr));		
+#endif
+
 	}
 
-	/* enable the FMC controller */
-	if (params->family == STM32H7_FMC)
-		setbits_le32(&regs->bcr1, FMC_BCR1_FMCEN);
+	// char * temp = (char*) 0xD0000000;
+	// for(int i = 0; i < 24; i ++) {
+	// 	temp += 1 << i;
+	// 	debug("trying to access data in SDRAM %x\n", (uint32_t) temp); 
+	// 	debug("trying to access data in SDRAM, %x\n",(uint32_t)*temp); 
+	// 	temp = (char*) 0xD0000000;
+	// }
 
 	return 0;
 }
