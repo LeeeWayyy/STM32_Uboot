@@ -19,7 +19,8 @@
 
 	memory {
 		device_type = "memory";
-		reg = <0xd0000000 0x2000000>;
+		/*based on configuration of MT48LC4M32B2*/
+		reg = <0xd0000000 0x07fffff>;
 	};
 
 	aliases {

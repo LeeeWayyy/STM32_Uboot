@@ -8,6 +8,8 @@
 #define __CONFIG_H
 
 #include <config.h>
+#define DEBUG
+#define TARGET_STM32H745_DISCO
 
 // #define DEBUG
 

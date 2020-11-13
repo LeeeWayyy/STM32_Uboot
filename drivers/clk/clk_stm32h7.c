@@ -33,6 +33,22 @@
 #define RCC_CFGR_SW_HSE			2
 #define RCC_CFGR_SW_PLL1		3
 #define RCC_CFGR_TIMPRE			BIT(15)
+#define RCC_CFGR_MCO1PRE_SHIFT	18
+#define RCC_CFGR_MCO1PRE_MASK	GENMASK(21, 18)
+#define RCC_CFGR_MCO1SEL_SHIFT	22
+#define RCC_CFGR_MCO1SEL_MASK	GENMASK(24, 22)
+#define RCC_CFGR_MCO2PRE_SHIFT	25
+#define RCC_CFGR_MCO2PRE_MASK	GENMASK(28, 25)
+#define RCC_CFGR_MCO2SEL_SHIFT	29
+#define RCC_CFGR_MCO2SEL_MASK	GENMASK(31, 29)
+
+#define RCC_MCOPRE_DIV_2		2
+#define RCC_MCOPRE_DIV_10		10
+#define RCC_MCO_HSI				0
+#define	RCC_MCO_LSE				1
+#define	RCC_MCO_HSE				2
+#define RCC_MCO_PLLQ			3
+#define RCC_MCO_HSI48			4				
 
 #define RCC_PLLCKSELR_PLLSRC_HSI	0
 #define RCC_PLLCKSELR_PLLSRC_CSI	1
@@ -369,7 +385,7 @@ int configure_clocks(struct udevice *dev)
 			VOS_SCALE_1 << PWR_D3CR_VOS_SHIFT);*/
 	clrbits_le32(pwr_base + PWR_CR3, PWR_CR3_SCUEN);
 	clrsetbits_le32(pwr_base + PWR_D3CR, PWR_D3CR_VOS_MASK,
-			VOS_SCALE_1 << PWR_D3CR_VOS_SHIFT);
+			VOS_SCALE_3 << PWR_D3CR_VOS_SHIFT);
 	/* Lock supply configuration update */
 	clrbits_le32(pwr_base + PWR_CR3, PWR_CR3_SCUEN);
 	while (!(readl(pwr_base + PWR_D3CR) & PWR_D3CR_VOSREADY))
@@ -380,8 +396,21 @@ int configure_clocks(struct udevice *dev)
 	while ((readl(&regs->cr) & RCC_CR_HSERDY))
 		;
 
+	#ifdef TARGET_STM32H745_DISCO
+	/* configure MCO1 to output the PLL_Q clk*/
+	uint32_t tmpcfg = RCC_MCO_PLLQ << RCC_CFGR_MCO1SEL_SHIFT	|
+						RCC_MCOPRE_DIV_10 << RCC_CFGR_MCO1PRE_SHIFT;
+	writel(tmpcfg, &regs->cfgr);
+	#endif
+
+
 	/* clear HSE bypass and set it ON */
+	/* this enables the external clk source from external resonator*/
+#ifndef TARGET_STM32H745_DISCO
 	clrbits_le32(&regs->cr, RCC_CR_HSEBYP);
+#else
+	setbits_le32(&regs->cr, RCC_CR_HSEBYP);
+#endif
 	/* Switch on HSE */
 	setbits_le32(&regs->cr, RCC_CR_HSEON);
 	while (!(readl(&regs->cr) & RCC_CR_HSERDY))
