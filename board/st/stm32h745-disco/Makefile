@@ -4,3 +4,4 @@
 # Author(s): Patrice CHOTARD, <patrice.chotard@st.com> for STMicroelectronics.
 
 obj-y	:= stm32h745-disco.o
+obj-y 	+= led.o

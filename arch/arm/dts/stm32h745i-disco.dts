@@ -74,3 +74,4 @@
 	pinctrl-names = "default";
 	status = "okay";
 };
+

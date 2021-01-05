@@ -7,6 +7,7 @@
 #include <common.h>
 #include <dm.h>
 #include <init.h>
+#include <asm-generic/gpio.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -36,6 +37,9 @@ int dram_init_banksize(void)
 
 int board_early_init_f(void)
 {
+	gpio_request(CONFIG_GREEN_LED, "green led");
+	gpio_direction_output(CONFIG_GREEN_LED, 0);
+	gpio_set_value(CONFIG_GREEN_LED, 0);
 	return 0;
 }
 
