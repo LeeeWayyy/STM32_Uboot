@@ -17,7 +17,7 @@
 /* RCC CR specific definitions */
 #define RCC_CR_HSION			BIT(0)
 #define RCC_CR_HSIRDY			BIT(2)
-
+#define RCC_CR_D2CKRDY			BIT(15)
 #define RCC_CR_HSEON			BIT(16)
 #define RCC_CR_HSERDY			BIT(17)
 #define RCC_CR_HSEBYP			BIT(18)
@@ -895,7 +895,7 @@ static struct clk_ops stm32_clk_ops = {
 
 U_BOOT_DRIVER(stm32h7_clk) = {
 	.name			= "stm32h7_rcc_clock",
-	.id			= UCLASS_CLK,
+	.id				= UCLASS_CLK,
 	.ops			= &stm32_clk_ops,
 	.probe			= stm32_clk_probe,
 	.priv_auto_alloc_size	= sizeof(struct stm32_clk),

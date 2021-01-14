@@ -223,8 +223,6 @@ int stm32_sdram_init(struct udevice *dev)
 				| timing->txsr << FMC_SDTR_TXSR_SHIFT
 				| timing->tmrd << FMC_SDTR_TMRD_SHIFT,
 				&regs->sdtr1);
-
-			ctb = FMC_SDCMR_BANK_1;		
 		}else {
 			clrsetbits_le32(&regs->sdcr1, 
 							FMC_SDCR_SDCLK_MASK 							|
@@ -264,9 +262,9 @@ int stm32_sdram_init(struct udevice *dev)
 			debug("sdcr2 register value is : %x\n", (uint32_t) readl(&regs->sdcr2));
 			debug("sdtr1 register value is : %x\n", (uint32_t) readl(&regs->sdtr1));
 			debug("sdtr2 register value is : %x\n", (uint32_t) readl(&regs->sdtr2));
-			ctb = FMC_SDCMR_BANK_2;
 		}
 
+		ctb = FMC_SDCMR_BANK_2;
 
 #ifndef TARGET_STM32H745_DISCO
 		writel(ctb | FMC_SDCMR_MODE_START_CLOCK, &regs->sdcmr);
@@ -303,7 +301,7 @@ int stm32_sdram_init(struct udevice *dev)
 							regs);
 		/* Step 2: Insert 100 us minimum delay */
 		udelay(1000);
-		// FMC_BUSY_WAIT(regs);
+		FMC_BUSY_WAIT(regs);
 
 		/* Step 3: Configure a PALL (precharge all) command */ 
 		stm32_sdram_sendData(SDRAM_PALL_CMD,
@@ -312,7 +310,7 @@ int stm32_sdram_init(struct udevice *dev)
 							0,
 							regs);
 		udelay(100);
-		// FMC_BUSY_WAIT(regs);
+		FMC_BUSY_WAIT(regs);
 
 		/* Step 4: Configure a Refresh command */ 
 		stm32_sdram_sendData(SDRAM_AUTOREFRESH_MODE_CMD,
@@ -321,7 +319,7 @@ int stm32_sdram_init(struct udevice *dev)
 							0,
 							regs);
 		udelay(100);
-		// FMC_BUSY_WAIT(regs);
+		FMC_BUSY_WAIT(regs);
 
 		/*step 5. Program the external memory mode register*/
 		uint32_t   tmpmrd = (uint32_t)	SDRAM_MODEREG_BURST_LENGTH_1          |\
@@ -335,7 +333,7 @@ int stm32_sdram_init(struct udevice *dev)
 							tmpmrd,
 							regs);
 		udelay(100);
-		// FMC_BUSY_WAIT(regs);
+		FMC_BUSY_WAIT(regs);
 
 		/* Refresh timer */
 		writel(ref_count << 1, &regs->sdrtr);
@@ -344,13 +342,14 @@ int stm32_sdram_init(struct udevice *dev)
 
 	}
 
-	// char * temp = (char*) 0xD0000000;
-	// for(int i = 0; i < 24; i ++) {
-	// 	temp += 1 << i;
-	// 	debug("trying to access data in SDRAM %x\n", (uint32_t) temp); 
-	// 	debug("trying to access data in SDRAM, %x\n",(uint32_t)*temp); 
-	// 	temp = (char*) 0xD0000000;
-	// }
+	char *temp = (char*) 0xD0000000;
+	for(int i = 0; i < 22; i ++) {
+		temp += (1 << i);
+		*temp = i;
+		debug("trying to write data in SDRAM %x, with data %x\n", (uint32_t) temp, i); 
+		debug("trying to read  data in SDRAM, %x\n", (uint32_t) (*temp)); 
+		temp = (char*) 0xD0000000;
+	}
 
 	return 0;
 }

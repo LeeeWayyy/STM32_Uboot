@@ -155,13 +155,13 @@ here:
 	SPL_CLEAR_BSS
 #endif
 
-# ifdef CONFIG_SPL_BUILD
+#ifdef CONFIG_SPL_BUILD
 	/* Use a DRAM stack for the rest of SPL, if requested */
 	bl	spl_relocate_stack_gd
 	cmp	r0, #0
 	movne	sp, r0
 	movne	r9, r0
-# endif
+#endif
 
 #if ! defined(CONFIG_SPL_BUILD)
 	bl coloured_LED_init
